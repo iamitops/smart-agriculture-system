@@ -1,53 +1,37 @@
 services:
 
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-
-    container_name: backend-container
-
-    ports:
-      - "8000:8000"
-
-    volumes:
-      - ./backend:/app
-
-    depends_on:
-      - postgres
-      - redis
-
-    environment:
-      DATABASE_HOST: postgres
-      DATABASE_PORT: 5432
-      DATABASE_NAME: agriculture_db
-      DATABASE_USER: postgres
-      DATABASE_PASSWORD: postgres123
-      REDIS_HOST: redis
-
   postgres:
     image: postgres:17
-
     container_name: postgres-container
-
     environment:
-      POSTGRES_DB: agriculture_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres123
-
-    ports:
-      - "5432:5432"
-
+      POSTGRES_DB: agriculture_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - agriculture-network
 
   redis:
     image: redis:8
-
     container_name: redis-container
+    networks:
+      - agriculture-network
 
+  backend:
+    build:
+      context: ./backend
+    container_name: backend-container
     ports:
-      - "6379:6379"
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - agriculture-network
 
 volumes:
- postgres_data:
+  postgres_data:
+
+networks:
+  agriculture-network:

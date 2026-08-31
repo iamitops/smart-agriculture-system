@@ -2,11 +2,15 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
-from .database import SessionLocal
+from .database import SessionLocal, engine, Base
+from . import models
 from .models import Farm, Crop, Sensor, Irrigation
 
 
 app = FastAPI()
+@app.on_event("startup")
+def startup():
+    Base.metadata.create_all(bind=engine)
 
 
 app.add_middleware(
