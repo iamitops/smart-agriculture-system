@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout Repository
         uses: actions/checkout@v4
 
@@ -44,8 +45,42 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
+
           script: |
+
+            echo "Starting deployment..."
+
             sudo docker pull leadsamit/smart-agriculture-backend:v1
+
+            echo "Creating Docker network..."
+            sudo docker network create agriculture-network || true
+
+            echo "Stopping old backend..."
             sudo docker stop backend-container || true
             sudo docker rm backend-container || true
-            sudo docker run -d --name backend-container -p 8000:8000 leadsamit/smart-agriculture-backend:v1
+
+            echo "Connecting PostgreSQL to network..."
+            sudo docker network connect agriculture-network postgres-container || true
+
+            echo "Connecting Redis to network..."
+            sudo docker network connect agriculture-network redis-container || true
+
+            echo "Starting backend..."
+
+            sudo docker run -d \
+              --name backend-container \
+              --network agriculture-network \
+              -p 8000:8000 \
+              leadsamit/smart-agriculture-backend:v1
+
+            echo "Waiting for backend..."
+            sleep 10
+
+            echo "Backend status:"
+            sudo docker ps
+
+            echo "Testing backend..."
+            sudo docker exec backend-container \
+              python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:8000/').read().decode())"
+
+            echo "Deployment completed successfully!"
